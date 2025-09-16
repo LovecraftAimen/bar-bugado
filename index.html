@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cyberbar — Tela Interativa</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#05040a; --bg2:#0b0a12; --neon-p:#f72585; --neon-c:#06d6a0; --glass:rgba(255,255,255,0.06);
+      --accent:#7c4dff;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;}
+    .stage{
+      width:100%;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(180deg,var(--bg1),var(--bg2));
+      color:#e6eef8;position:relative;padding:24px;
+    }
+    /* city skyline */
+    .skyline{
+      position:absolute;inset:0;z-index:0;pointer-events:none;mix-blend-mode:overlay;
+      background-image:radial-gradient(ellipse at 10% 20%, rgba(255,0,150,0.06), transparent 10%), radial-gradient(ellipse at 90% 30%, rgba(6,214,160,0.03), transparent 18%);
+    }
+    .neon-grids{position:absolute;inset:0;z-index:0;opacity:0.18;background-image:repeating-linear-gradient(90deg, rgba(124,77,255,0.06) 0 1px, transparent 1px 40px), repeating-linear-gradient(0deg, rgba(6,214,160,0.04) 0 1px, transparent 1px 40px);filter:blur(8px)}
+
+    .panel{
+      width:min(1100px,96%);height:min(680px,92%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));border-radius:16px;padding:18px;display:grid;grid-template-columns:1fr 420px;gap:18px;align-items:stretch;position:relative;z-index:2;box-shadow:0 10px 40px rgba(2,1,8,0.6) ;backdrop-filter: blur(6px);
+      border:1px solid rgba(255,255,255,0.03);
+    }
+
+    /* left: scene */
+    .scene{
+      position:relative;border-radius:12px;overflow:hidden;background:linear-gradient(180deg,#0a0b10 0%, #101019 60%);display:flex;align-items:flex-end;padding:28px;
+    }
+    .bar-surface{position:absolute;left:0;right:0;bottom:0;height:140px;background:linear-gradient(180deg, rgba(0,0,0,0.2), rgba(255,255,255,0.02));border-top:1px solid rgba(255,255,255,0.03);display:flex;align-items:center;padding:18px 28px;gap:18px}
+    .bar-top{position:absolute;left:0;right:0;top:0;height:220px;background:linear-gradient(180deg, rgba(10,6,20,0.4), transparent);pointer-events:none}
+
+    /* bartender block */
+    .barman{
+      width:360px;max-width:46%;height:420px;position:relative;margin-left:40px;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;transform-origin:center bottom;
+    }
+    /* simple stylized SVG silhouette */
+    .barman svg{width:100%;height:auto;display:block}
+
+    /* interaction halo */
+    .click-hint{
+      position:absolute;left:50%;transform:translateX(-50%);bottom:30px;background:linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));padding:10px 16px;border-radius:999px;font-size:13px;border:1px solid rgba(255,255,255,0.04);
+      display:flex;gap:10px;align-items:center;backdrop-filter: blur(6px);
+    }
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--neon-p);box-shadow:0 0 10px var(--neon-p)}
+
+    /* right: UI */
+    .ui{padding:14px;border-left:1px dashed rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:14px}
+    .title{font-family:Orbitron, sans-serif;font-size:18px;color:var(--neon-p);letter-spacing:1px}
+    .panel-card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+
+    .options{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+    .btn{
+      padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.05);background:var(--glass);cursor:pointer;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:10px
+    }
+    .btn:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(124,77,255,0.06);}
+
+    /* dialog */
+    .dialog-box{height:120px;border-radius:10px;padding:12px;overflow:auto;background:linear-gradient(180deg, rgba(0,0,0,0.25), rgba(255,255,255,0.02));font-size:14px}
+    .dialog-text{font-size:15px;line-height:1.45}
+
+    /* small details */
+    .neon-sign{position:absolute;right:22px;top:22px;font-family:Orbitron;color:var(--neon-c);font-size:22px;letter-spacing:1px;text-shadow:0 0 12px rgba(6,214,160,0.4)}
+
+    /* bartender arm washing animation */
+    .arm{transform-origin:50% 20%;animation:swish 1.6s infinite ease-in-out}
+    .glass{transform-origin:50% 80%;animation:tilt 1.8s infinite ease-in-out}
+    @keyframes swish{0%{transform:rotate(0deg)}50%{transform:rotate(-8deg)}100%{transform:rotate(0deg)}}
+    @keyframes tilt{0%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-6px) rotate(-6deg)}100%{transform:translateY(0) rotate(0deg)}}
+
+    /* responsive */
+    @media (max-width:980px){.panel{grid-template-columns:1fr;grid-auto-rows:auto;height:auto}.barman{max-width:60%;margin:0 auto}.ui{border-left:none;border-top:1px dashed rgba(255,255,255,0.03);padding-top:18px}}
+
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="skyline"></div>
+    <div class="neon-grids"></div>
+
+    <div class="panel">
+      <div class="scene">
+        <div class="bar-top"></div>
+
+        <div class="barman" id="barman">
+          <!-- SVG bartender: elegante, cabelos pra trás, ta lavando um copo -->
+          <svg viewBox="0 0 400 600" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <linearGradient id="skin" x1="0" x2="1"><stop offset="0" stop-color="#f5d6c6"/><stop offset="1" stop-color="#eab79a"/></linearGradient>
+              <linearGradient id="coat" x1="0" x2="1"><stop offset="0" stop-color="#111"/><stop offset="1" stop-color="#28123b"/></linearGradient>
+              <filter id="neonBlur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+
+            <!-- silhouette body -->
+            <g transform="translate(20,20)">
+              <rect x="40" y="220" rx="16" ry="16" width="320" height="300" fill="url(#coat)" opacity="0.98" />
+
+              <!-- head and hair -->
+              <g transform="translate(160,110)">
+                <ellipse cx="0" cy="0" rx="58" ry="70" fill="url(#skin)" />
+                <!-- hair swept back -->
+                <path d="M-60,-10 C-90,-30 -90,-80 -20,-90 C20,-95 70,-70 60,-30 C50,-10 10,0 -20,6 C-40,10 -55,5 -60,-10 Z" fill="#1b0f1a"/>
+                <!-- stylish undercut line neon -->
+                <path d="M-40,-30 C-20,-40 10,-43 36,-34" stroke="rgba(124,77,255,0.45)" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <!-- eyes minimal -->
+                <path d="M-18,8 q8,6 16,0" stroke="#0b0b10" stroke-width="3" stroke-linecap="round" fill="none"/>
+                <path d="M18,8 q8,6 16,0" stroke="#0b0b10" stroke-width="3" stroke-linecap="round" fill="none"/>
+                <!-- collar -->
+                <path d="M-40,40 C-30,36 30,36 40,40 L44,54 L-44,54 Z" fill="#0b0b0f"/>
+              </g>
+
+              <!-- right arm doing washing motion -->
+              <g transform="translate(240,330) scale(1.1)" class="arm">
+                <rect x="-8" y="-8" width="60" height="18" rx="10" fill="#0b0b10" transform="rotate(-16)"/>
+                <!-- hand holding glass -->
+                <g transform="translate(36,-6)" class="glass">
+                  <rect x="0" y="0" width="18" height="36" rx="4" fill="rgba(255,255,255,0.08)"/>
+                  <rect x="2" y="4" width="14" height="20" rx="3" fill="rgba(6,214,160,0.08)"/>
+                  <ellipse cx="9" cy="32" rx="9" ry="3" fill="rgba(255,255,255,0.06)"/>
+                </g>
+              </g>
+
+              <!-- left arm resting -->
+              <g transform="translate(120,360)">
+                <rect x="-8" y="-8" width="86" height="22" rx="12" fill="#0b0b10" transform="rotate(8)"/>
+              </g>
+
+              <!-- small bar items -->
+              <g transform="translate(70,480)">
+                <rect x="0" y="0" width="260" height="12" rx="6" fill="rgba(255,255,255,0.02)"/>
+                <rect x="12" y="-58" width="28" height="58" rx="4" fill="rgba(255,255,255,0.03)"/>
+                <rect x="52" y="-56" width="18" height="56" rx="4" fill="rgba(6,214,160,0.03)"/>
+                <rect x="86" y="-62" width="22" height="62" rx="4" fill="rgba(247,37,133,0.03)"/>
+              </g>
+
+            </g>
+          </svg>
+
+          <div class="click-hint" id="hint">
+            <div class="dot"></div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.78);">Clique no barman para interagir</div>
+          </div>
+        </div>
+
+        <div class="bar-surface">
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:20px;color:rgba(255,255,255,0.9);">Bar Neon — 7th Layer</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:6px">Um refúgio chique entre néon e chuva ácida. Sinta-se em casa — se souber conversar.</div>
+          </div>
+          <div style="width:240px;text-align:right;font-size:12px;color:rgba(255,255,255,0.5)">
+            <div>Hora: <span id="clock">--:--</span></div>
+            <div style="margin-top:8px">Reputação: <strong style="color:var(--neon-p)">+12</strong></div>
+          </div>
+        </div>
+
+      </div>
+
+      <aside class="ui">
+        <div class="neon-sign">NEON BAR</div>
+        <div class="panel-card">
+          <div class="title">Barman — Dorian Voss</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:6px">Um barman xique, cabelo médio penteado pra trás, sempre com um copo na mão e uma resposta na ponta da língua.</div>
+        </div>
+
+        <div class="panel-card">
+          <div style="font-weight:700">Ações</div>
+          <div class="options">
+            <button class="btn" onclick="interact('falar')">Falar com o barman <span>💬</span></button>
+            <button class="btn" onclick="interact('pedido')">Pedir uma bebida <span>🍸</span></button>
+            <button class="btn" onclick="interact('observar')">Observar o bar <span>👀</span></button>
+            <button class="btn" onclick="interact('secret')">Ação secreta <span>🔐</span></button>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div style="font-weight:700;margin-bottom:6px">Conversa</div>
+          <div class="dialog-box" id="dialog">
+            <div class="dialog-text" id="dialogText">Clique em uma ação para começar a conversa. As respostas do barman têm tom sarcástico, elegante e misterioso.</div>
+          </div>
+        </div>
+
+        <div class="panel-card" style="display:flex;gap:8px;align-items:center;justify-content:space-between">
+          <div style="font-size:13px;color:rgba(255,255,255,0.6)">Dica: aproxime-se (toque no barman) para respostas especiais.</div>
+          <div style="font-size:12px;color:var(--neon-c);font-weight:700">Interativo</div>
+        </div>
+
+      </aside>
+
+    </div>
+
+  </div>
+
+  <script>
+    // clock
+    function updateClock(){
+      const el = document.getElementById('clock');
+      const now = new Date();
+      el.textContent = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    }
+    updateClock(); setInterval(updateClock, 60_000);
+
+    const dialogText = document.getElementById('dialogText');
+    const barman = document.getElementById('barman');
+    const hint = document.getElementById('hint');
+
+    // dialog variations
+    const replies = {
+      falar: [
+        'Dorian: Ah, mais um rosto curioso. O que te traz ao meu bar — nostalgia ou dívida?'
+        , 'Dorian: Conversa rápida: você paga em créditos, favores, ou boas histórias? Escolha.'
+        , 'Dorian: Não costumo ficar de papo por horas — mas para os clientes certos faço uma exceção.'
+      ],
+      pedido: [
+        'Dorian: Tenho um coquetel chamado "Chuva Ácida" — cítrico, quente e perigoso. Vai encarar?'
+        , 'Dorian: Se prefere algo suave, recomendo a bebida "Neon Velvet" — doce, com final seco.'
+        , 'Dorian: Preparando... não pisque, às vezes o preparo envolve fogo de verdade.'
+      ],
+      observar: [
+        'Dorian: Repare nas luzes — cada neon conta uma história de fortuna e erro. Alguns clientes nunca voltam.'
+        , 'Dorian: Aquela mesa ao canto? Nunca pergunte o que está sendo discutido ali.'
+        , 'Dorian: As garrafas têm rótulos antigos. Alguns ingredientes vêm de lugares que não existem mais.'
+      ],
+      secret: [
+        'Dorian: Ah, você achou a ação secreta. Talvez eu precise de um favor... ou talvez ofereça um brinde.'
+        , 'Dorian: Se for inteligente, peça algo específico. Se for tolo, beba e esqueça.'
+      ],
+      touch: [
+        'Dorian (sussurrando): Gosta de segredos? Eu os troco por histórias. O que você tem para oferecer?'
+        , 'Dorian (sorriso leve): Toca aqui, e eu te conto algo que não conto a estranhos.'
+      ]
+    };
+
+    function setDialog(text){
+      // typewriter effect
+      dialogText.textContent = '';
+      let i=0;
+      const speed=18;
+      const t = setInterval(()=>{
+        dialogText.textContent += text[i]||'';
+        i++;
+        if(i>text.length){clearInterval(t);} 
+      }, speed);
+    }
+
+    function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+
+    function interact(action){
+      if(!action) return;
+      // closer interactions if clicked barman recently
+      setDialog(pick(replies[action]||['...']))
+      // small visual feedback
+      barman.animate([{transform:'scale(1)'},{transform:'scale(1.02)'},{transform:'scale(1)'}],{duration:420,iterations:1});
+    }
+
+    // clicking the barman for special reply
+    barman.addEventListener('click', ()=>{
+      hint.style.opacity = 0; hint.style.transform = 'translateY(10px)';
+      setTimeout(()=>{hint.style.display='none'},600);
+      setDialog(pick(replies.touch));
+    });
+
+    // keyboard shortcuts
+    document.addEventListener('keydown',(e)=>{
+      if(e.key==='1') interact('falar');
+      if(e.key==='2') interact('pedido');
+      if(e.key==='3') interact('observar');
+    });
+
+    // small ambient neon sound (WebAudio simple oscillator) - optional
+    // create a subtle synth hum on user gesture (most browsers require interaction)
+    let audioInited=false;
+    function initAudio(){
+      if(audioInited) return; audioInited=true;
+      try{
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.type='sine'; o.frequency.value = 110; g.gain.value = 0.0025; o.connect(g); g.connect(ctx.destination); o.start();
+        // fade out slowly
+        setTimeout(()=>{g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 6)}, 4000);
+      }catch(e){/*ignore on failure*/}
+    }
+    // init audio on first click anywhere
+    document.addEventListener('click', initAudio, {once:true});
+
+  </script>
+</body>
+</html>
